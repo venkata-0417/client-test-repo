@@ -14,129 +14,79 @@ on:
           - nextjs
           - python
           - java
+      build_required:
+        description: 'Is Build Required?'
+        required: true
+        default: 'yes'
+        type: choice
+        options:
+          - yes
+          - no
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
-      # -------------------------------
-      # Checkout Repository
-      # -------------------------------
+      # -----------------------------------
+      # 1️⃣ Pull Code
+      # -----------------------------------
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Show Build Info
+      # -----------------------------------
+      # 2️⃣ Generate Source Checksum (IMMEDIATELY)
+      # -----------------------------------
+      - name: Generate Source Code Checksum
         run: |
-          echo "Project Type : ${{ inputs.project_type }}"
-          echo "Commit SHA   : ${{ github.sha }}"
-          echo "Run ID       : ${{ github.run_id }}"
+          echo "Generating source checksum after pull..."
 
-      # -------------------------------
-      # NODE PROJECTS (Angular/React/Next)
-      # -------------------------------
+          find . -type f \
+            ! -path './.git/*' \
+            | sort | xargs sha256sum > source_checksum.txt
+
+          cat source_checksum.txt
+
+      # -----------------------------------
+      # 3️⃣ Build Section (ONLY IF REQUIRED)
+      # -----------------------------------
       - name: Setup Node
-        if: ${{ inputs.project_type == 'angular' || inputs.project_type == 'react' || inputs.project_type == 'nextjs' }}
+        if: ${{ inputs.build_required == 'yes' && (inputs.project_type == 'angular' || inputs.project_type == 'react' || inputs.project_type == 'nextjs') }}
         uses: actions/setup-node@v4
         with:
           node-version: '20'
 
-      - name: Install Dependencies (Node)
-        if: ${{ inputs.project_type == 'angular' || inputs.project_type == 'react' || inputs.project_type == 'nextjs' }}
-        run: npm ci
-
-      - name: Build React / Next.js
-        if: ${{ inputs.project_type == 'react' || inputs.project_type == 'nextjs' }}
-        run: npm run build
-
-      - name: Build Angular
-        if: ${{ inputs.project_type == 'angular' }}
-        run: npm run build -- --configuration production
-
-      # -------------------------------
-      # PYTHON PROJECT
-      # -------------------------------
-      - name: Setup Python
-        if: ${{ inputs.project_type == 'python' }}
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-
-      - name: Build Python
-        if: ${{ inputs.project_type == 'python' }}
+      - name: Build Project
+        if: ${{ inputs.build_required == 'yes' && (inputs.project_type == 'angular' || inputs.project_type == 'react' || inputs.project_type == 'nextjs') }}
         run: |
-          pip install -r requirements.txt
-          echo "Python build completed"
+          npm ci
+          npm run build
 
-      # -------------------------------
-      # JAVA PROJECT
-      # -------------------------------
-      - name: Setup Java
-        if: ${{ inputs.project_type == 'java' }}
-        uses: actions/setup-java@v4
-        with:
-          java-version: '17'
-          distribution: 'temurin'
-
-      - name: Build Java
-        if: ${{ inputs.project_type == 'java' }}
-        run: mvn clean package -DskipTests
-
-      # -------------------------------
-      # GENERATE SOURCE CHECKSUM
-      # -------------------------------
-      - name: Generate Source Code Checksum
+      # -----------------------------------
+      # 4️⃣ Generate Build Checksum (ONLY IF BUILT)
+      # -----------------------------------
+      - name: Generate Build Checksum
+        if: ${{ inputs.build_required == 'yes' }}
         run: |
-          echo "Generating source code checksum..."
-
-          find . -type f \
-            ! -path './.git/*' \
-            ! -path './node_modules/*' \
-            ! -path './dist/*' \
-            ! -path './build/*' \
-            ! -path './target/*' \
-            ! -path './.next/*' \
-            | sort | xargs sha256sum > source_checksum.txt
-
-          if [ ! -s source_checksum.txt ]; then
-            echo "No source files found" > source_checksum.txt
-          fi
-
-          cat source_checksum.txt
-
-      # -------------------------------
-      # GENERATE BUILD CHECKSUM
-      # -------------------------------
-      - name: Generate Build Artifact Checksum
-        run: |
-          echo "Generating build artifact checksum..."
-
           if [ -d "dist" ]; then
             find dist -type f | sort | xargs sha256sum > build_checksum.txt
           elif [ -d "build" ]; then
             find build -type f | sort | xargs sha256sum > build_checksum.txt
           elif [ -d "target" ]; then
             find target -type f | sort | xargs sha256sum > build_checksum.txt
-          elif [ -d ".next" ]; then
-            find .next -type f | sort | xargs sha256sum > build_checksum.txt
           else
             echo "No build directory found" > build_checksum.txt
           fi
 
-          if [ ! -s build_checksum.txt ]; then
-            echo "Build directory exists but no files found" > build_checksum.txt
-          fi
-
           cat build_checksum.txt
 
-      # -------------------------------
-      # UPLOAD ESCROW ARTIFACT
-      # -------------------------------
+      # -----------------------------------
+      # 5️⃣ Upload Artifacts
+      # -----------------------------------
       - name: Upload Escrow Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: escrow-build-${{ github.run_id }}
+          name: escrow-${{ github.run_id }}
           path: |
             source_checksum.txt
             build_checksum.txt
-          retention-days: 30
