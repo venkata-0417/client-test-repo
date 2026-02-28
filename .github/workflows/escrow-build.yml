@@ -15,13 +15,17 @@ on:
           - python
           - java
       build_required:
-        description: "Is Build Required? (yes = Level 2, no = Level 1 only)"
+        description: "Level 1 = no build | Level 2 = yes build"
         required: true
         default: "no"
         type: choice
         options:
-          - "yes"
           - "no"
+          - "yes"
+
+env:
+  BUILD_REQUIRED: ${{ inputs.build_required }}
+  PROJECT_TYPE: ${{ inputs.project_type }}
 
 jobs:
   escrow:
@@ -29,22 +33,29 @@ jobs:
 
     steps:
 
-      # ─────────────────────────────────────────
-      # STEP 1 — Checkout Code
-      # ─────────────────────────────────────────
+      # ─────────────────────────────────
+      # DEBUG — Always print inputs first
+      # ─────────────────────────────────
+      - name: Print Inputs
+        run: |
+          echo "=============================="
+          echo "BUILD_REQUIRED : $BUILD_REQUIRED"
+          echo "PROJECT_TYPE   : $PROJECT_TYPE"
+          echo "=============================="
+
+      # ─────────────────────────────────
+      # STEP 1 — Checkout
+      # ─────────────────────────────────
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      # ─────────────────────────────────────────
-      # STEP 2 — Source Checksum (ALWAYS runs)
-      # Level 1 = source checksum only
-      # Level 2 = source checksum + build checksum
-      # ─────────────────────────────────────────
+      # ─────────────────────────────────
+      # STEP 2 — Source Checksum
+      # Runs for BOTH Level 1 and Level 2
+      # ─────────────────────────────────
       - name: Generate Source Checksum
         run: |
-          echo "========================================="
           echo "Generating SOURCE checksum..."
-          echo "========================================="
           find . -type f \
             ! -path './.git/*' \
             ! -path './node_modules/*' \
@@ -53,162 +64,136 @@ jobs:
             ! -path './build/*' \
             ! -path './target/*' \
             | sort | xargs sha256sum > source_checksum.txt
-
-          echo "Source checksum generated:"
+          echo "--- Source Checksum ---"
           cat source_checksum.txt
-          echo "Total files checksummed: $(wc -l < source_checksum.txt)"
+          echo "Total: $(wc -l < source_checksum.txt) files"
 
-      # ─────────────────────────────────────────
-      # STEP 3 — Node Setup (Level 2 only)
-      # ─────────────────────────────────────────
+      # ─────────────────────────────────
+      # STEP 3 — Gate: Skip if Level 1
+      # This single step controls all build steps below
+      # ─────────────────────────────────
+      - name: Check Build Level
+        id: level_check
+        run: |
+          if [ "$BUILD_REQUIRED" = "yes" ]; then
+            echo "LEVEL=2" >> $GITHUB_OUTPUT
+            echo "RUN_BUILD=true" >> $GITHUB_OUTPUT
+          else
+            echo "LEVEL=1" >> $GITHUB_OUTPUT
+            echo "RUN_BUILD=false" >> $GITHUB_OUTPUT
+          fi
+          echo "Level set to: $BUILD_REQUIRED"
+
+      # ─────────────────────────────────
+      # STEP 4 — Node Setup
+      # Only Level 2 + node project types
+      # ─────────────────────────────────
       - name: Setup Node
-        if: >
-          inputs.build_required == 'yes' &&
-          (inputs.project_type == 'angular' ||
-           inputs.project_type == 'react'   ||
-           inputs.project_type == 'nextjs')
+        if: steps.level_check.outputs.RUN_BUILD == 'true' && (env.PROJECT_TYPE == 'angular' || env.PROJECT_TYPE == 'react' || env.PROJECT_TYPE == 'nextjs')
         uses: actions/setup-node@v4
         with:
           node-version: "20"
 
-      # ─────────────────────────────────────────
-      # STEP 4 — Install Dependencies (Level 2 only)
-      # ─────────────────────────────────────────
-      - name: Install Dependencies
-        if: >
-          inputs.build_required == 'yes' &&
-          (inputs.project_type == 'angular' ||
-           inputs.project_type == 'react'   ||
-           inputs.project_type == 'nextjs')
-        run: |
-          echo "Installing dependencies..."
-          npm ci
+      - name: Install Node Dependencies
+        if: steps.level_check.outputs.RUN_BUILD == 'true' && (env.PROJECT_TYPE == 'angular' || env.PROJECT_TYPE == 'react' || env.PROJECT_TYPE == 'nextjs')
+        run: npm ci
 
-      # ─────────────────────────────────────────
-      # STEP 5 — Build Angular
-      # ─────────────────────────────────────────
+      # ─────────────────────────────────
+      # STEP 5 — Build per project type
+      # ─────────────────────────────────
       - name: Build Angular
-        if: inputs.build_required == 'yes' && inputs.project_type == 'angular'
-        run: |
-          echo "Building Angular..."
-          npm run build -- --configuration production
+        if: steps.level_check.outputs.RUN_BUILD == 'true' && env.PROJECT_TYPE == 'angular'
+        run: npm run build -- --configuration production
 
-      # ─────────────────────────────────────────
-      # STEP 6 — Build React
-      # ─────────────────────────────────────────
       - name: Build React
-        if: inputs.build_required == 'yes' && inputs.project_type == 'react'
-        run: |
-          echo "Building React..."
-          npm run build
+        if: steps.level_check.outputs.RUN_BUILD == 'true' && env.PROJECT_TYPE == 'react'
+        run: npm run build
 
-      # ─────────────────────────────────────────
-      # STEP 7 — Build Next.js
-      # ─────────────────────────────────────────
       - name: Build Next.js
-        if: inputs.build_required == 'yes' && inputs.project_type == 'nextjs'
-        run: |
-          echo "Building Next.js..."
-          npm run build
+        if: steps.level_check.outputs.RUN_BUILD == 'true' && env.PROJECT_TYPE == 'nextjs'
+        run: npm run build
 
-      # ─────────────────────────────────────────
-      # STEP 8 — Setup Python (Level 2 only)
-      # ─────────────────────────────────────────
       - name: Setup Python
-        if: inputs.build_required == 'yes' && inputs.project_type == 'python'
+        if: steps.level_check.outputs.RUN_BUILD == 'true' && env.PROJECT_TYPE == 'python'
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
 
       - name: Build Python
-        if: inputs.build_required == 'yes' && inputs.project_type == 'python'
+        if: steps.level_check.outputs.RUN_BUILD == 'true' && env.PROJECT_TYPE == 'python'
         run: |
-          echo "Building Python..."
           pip install -r requirements.txt
-          echo "Python dependencies installed successfully"
+          echo "Python build complete"
 
-      # ─────────────────────────────────────────
-      # STEP 9 — Setup Java (Level 2 only)
-      # ─────────────────────────────────────────
       - name: Setup Java
-        if: inputs.build_required == 'yes' && inputs.project_type == 'java'
+        if: steps.level_check.outputs.RUN_BUILD == 'true' && env.PROJECT_TYPE == 'java'
         uses: actions/setup-java@v4
         with:
           java-version: "17"
           distribution: "temurin"
 
       - name: Build Java
-        if: inputs.build_required == 'yes' && inputs.project_type == 'java'
-        run: |
-          echo "Building Java..."
-          mvn clean package -DskipTests
+        if: steps.level_check.outputs.RUN_BUILD == 'true' && env.PROJECT_TYPE == 'java'
+        run: mvn clean package -DskipTests
 
-      # ─────────────────────────────────────────
-      # STEP 10 — Build Checksum (Level 2 only)
-      # ─────────────────────────────────────────
+      # ─────────────────────────────────
+      # STEP 6 — Build Checksum
+      # Only runs if Level 2
+      # ─────────────────────────────────
       - name: Generate Build Checksum
-        if: inputs.build_required == 'yes'
+        if: steps.level_check.outputs.RUN_BUILD == 'true'
         run: |
-          echo "========================================="
           echo "Generating BUILD checksum..."
-          echo "========================================="
-
           BUILD_DIR=""
-
-          if [ -d "dist" ]; then
-            BUILD_DIR="dist"
-          elif [ -d "build" ]; then
-            BUILD_DIR="build"
-          elif [ -d ".next" ]; then
-            BUILD_DIR=".next"
-          elif [ -d "target" ]; then
-            BUILD_DIR="target"
+          if   [ -d "dist"   ]; then BUILD_DIR="dist"
+          elif [ -d "build"  ]; then BUILD_DIR="build"
+          elif [ -d ".next"  ]; then BUILD_DIR=".next"
+          elif [ -d "target" ]; then BUILD_DIR="target"
           fi
 
           if [ -n "$BUILD_DIR" ]; then
-            echo "Build directory found: $BUILD_DIR"
+            echo "Build output found in: $BUILD_DIR"
             find "$BUILD_DIR" -type f | sort | xargs sha256sum > build_checksum.txt
-            echo "Build checksum generated:"
+            echo "--- Build Checksum ---"
             cat build_checksum.txt
-            echo "Total files checksummed: $(wc -l < build_checksum.txt)"
           else
-            echo "WARNING: No build output directory found."
-            echo "Searched for: dist, build, .next, target"
-            echo "no-build-output" > build_checksum.txt
+            echo "ERROR: No build output directory found (dist/build/.next/target)"
+            exit 1
           fi
 
-      # ─────────────────────────────────────────
-      # STEP 11 — Create empty build_checksum if
-      #           Level 1 only (so upload never fails)
-      # ─────────────────────────────────────────
-      - name: Create Placeholder for Level 1
-        if: inputs.build_required == 'no'
+      # ─────────────────────────────────
+      # STEP 7 — Placeholder for Level 1
+      # Ensures upload never fails
+      # ─────────────────────────────────
+      - name: Create Build Checksum Placeholder
+        if: steps.level_check.outputs.RUN_BUILD == 'false'
         run: |
-          echo "level-1-only-no-build-performed" > build_checksum.txt
+          echo "level-1-only-no-build-performed-run-${{ github.run_id }}" > build_checksum.txt
+          echo "Placeholder created for Level 1"
 
-      # ─────────────────────────────────────────
-      # STEP 12 — Summary
-      # ─────────────────────────────────────────
-      - name: Print Summary
+      # ─────────────────────────────────
+      # STEP 8 — Final Summary
+      # ─────────────────────────────────
+      - name: Escrow Summary
         run: |
-          echo "========================================="
-          echo "ESCROW BUILD SUMMARY"
-          echo "========================================="
-          echo "Project Type  : ${{ inputs.project_type }}"
-          echo "Build Required: ${{ inputs.build_required }}"
-          echo "Run ID        : ${{ github.run_id }}"
-          echo "Commit SHA    : ${{ github.sha }}"
-          echo "-----------------------------------------"
-          echo "Source Checksum File:"
+          echo "============================================"
+          echo "  ESCROW BUILD COMPLETE"
+          echo "============================================"
+          echo "  Level         : ${{ steps.level_check.outputs.LEVEL }}"
+          echo "  Project Type  : $PROJECT_TYPE"
+          echo "  Run ID        : ${{ github.run_id }}"
+          echo "  Commit SHA    : ${{ github.sha }}"
+          echo "--------------------------------------------"
+          echo "SOURCE CHECKSUM:"
           cat source_checksum.txt
-          echo "-----------------------------------------"
-          echo "Build Checksum File:"
+          echo "--------------------------------------------"
+          echo "BUILD CHECKSUM:"
           cat build_checksum.txt
-          echo "========================================="
+          echo "============================================"
 
-      # ─────────────────────────────────────────
-      # STEP 13 — Upload Both Artifacts
-      # ─────────────────────────────────────────
+      # ─────────────────────────────────
+      # STEP 9 — Upload Artifacts
+      # ─────────────────────────────────
       - name: Upload Escrow Artifacts
         uses: actions/upload-artifact@v4
         with:
@@ -217,7 +202,3 @@ jobs:
             source_checksum.txt
             build_checksum.txt
           retention-days: 30
-
-
-
-
