@@ -4,9 +4,9 @@ on:
   workflow_dispatch:
     inputs:
       project_type:
-        description: 'Project Type'
+        description: "Project Type"
         required: true
-        default: 'react'
+        default: "react"
         type: choice
         options:
           - angular
@@ -15,74 +15,84 @@ on:
           - python
           - java
       build_required:
-        description: 'Is Build Required?'
+        description: "Is Build Required?"
         required: true
-        default: 'yes'
+        default: "yes"
         type: choice
         options:
           - yes
           - no
 
 jobs:
-  build:
+  escrow:
     runs-on: ubuntu-latest
 
     steps:
-      # -----------------------------------
-      # 1️⃣ Pull Code
-      # -----------------------------------
+      # ---------------------------------------
+      # 1️⃣ Checkout Repository
+      # ---------------------------------------
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      # -----------------------------------
-      # 2️⃣ Generate Source Checksum (IMMEDIATELY)
-      # -----------------------------------
+      # ---------------------------------------
+      # 2️⃣ LEVEL 1 → Source Checksum ONLY
+      # ---------------------------------------
       - name: Generate Source Code Checksum
+        if: ${{ inputs.build_required == 'no' }}
         run: |
-          echo "Generating source checksum after pull..."
+          echo "Generating SOURCE checksum..."
 
           find . -type f \
             ! -path './.git/*' \
+            ! -path './node_modules/*' \
             | sort | xargs sha256sum > source_checksum.txt
 
           cat source_checksum.txt
 
-      # -----------------------------------
-      # 3️⃣ Build Section (ONLY IF REQUIRED)
-      # -----------------------------------
+      # ---------------------------------------
+      # 3️⃣ LEVEL 2 → Build Section
+      # ---------------------------------------
+
+      # ---------- Node Setup ----------
       - name: Setup Node
         if: ${{ inputs.build_required == 'yes' && (inputs.project_type == 'angular' || inputs.project_type == 'react' || inputs.project_type == 'nextjs') }}
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: "20"
+
+      - name: Install Dependencies
+        if: ${{ inputs.build_required == 'yes' && (inputs.project_type == 'angular' || inputs.project_type == 'react' || inputs.project_type == 'nextjs') }}
+        run: npm ci
 
       - name: Build Project
         if: ${{ inputs.build_required == 'yes' && (inputs.project_type == 'angular' || inputs.project_type == 'react' || inputs.project_type == 'nextjs') }}
-        run: |
-          npm ci
-          npm run build
+        run: npm run build
 
-      # -----------------------------------
-      # 4️⃣ Generate Build Checksum (ONLY IF BUILT)
-      # -----------------------------------
+      # ---------------------------------------
+      # 4️⃣ LEVEL 2 → Build Checksum ONLY
+      # ---------------------------------------
       - name: Generate Build Checksum
         if: ${{ inputs.build_required == 'yes' }}
         run: |
+          echo "Generating BUILD checksum..."
+
           if [ -d "dist" ]; then
             find dist -type f | sort | xargs sha256sum > build_checksum.txt
           elif [ -d "build" ]; then
             find build -type f | sort | xargs sha256sum > build_checksum.txt
           elif [ -d "target" ]; then
             find target -type f | sort | xargs sha256sum > build_checksum.txt
+          elif [ -d ".next" ]; then
+            find .next -type f | sort | xargs sha256sum > build_checksum.txt
           else
             echo "No build directory found" > build_checksum.txt
           fi
 
           cat build_checksum.txt
 
-      # -----------------------------------
+      # ---------------------------------------
       # 5️⃣ Upload Artifacts
-      # -----------------------------------
+      # ---------------------------------------
       - name: Upload Escrow Artifacts
         uses: actions/upload-artifact@v4
         with:
@@ -90,3 +100,4 @@ jobs:
           path: |
             source_checksum.txt
             build_checksum.txt
+          retention-days: 30
