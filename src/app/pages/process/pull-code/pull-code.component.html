@@ -1,0 +1,1018 @@
+<div class="header">
+    <div class="container-fluid">
+        <div class="header-body">
+            <div class="row align-items-center py-4">
+                <div class="col-lg-6 col-7">
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<div class="card flex justify-content-center " style="width: 95%; margin-left: 50px; margin-bottom: 6px;">
+    <div class="row">
+        <div class="col-10" style="padding-left: 40px; padding-right: 0;">
+            <h1 style="padding-top: 6px; margin-bottom: 20px; margin-top: 20px; color: #003564 !important;">
+                {{ projectName }}
+            </h1>
+        </div>
+        <div class="col-2 text-right" style="margin-top: 1.5%; padding-right: 2%;">
+            <button style="margin-right: 20px;" type="button" class="btn success" pTooltip="Back" tooltipPosition="top"
+                (click)="onBack()">
+                <i class="fa fa-arrow-left fa-lg"></i>
+            </button>
+        </div>
+    </div>
+</div>
+<div class="custom-tab-view">
+    <p-tabView [(activeIndex)]="activeTabIndex">
+
+        <p-tabPanel header="Deposit Method" *ngIf="_DepositMethodTab" [disabled]="Beneficiary">
+            <div class="row">
+                <div class="col-8" *ngIf="events && events.length > 0">
+                    <div class="card  flex justify-content-center" style="width: 100%; margin-left: 5px; ">
+                        <div *ngFor="let item of events | slice:0:5">
+                            <div class="row">
+                                <div class="col-11" style="padding-left: 40px; padding-right: 0;">
+                                    <div class="row align-items-center">
+                                        <div class="col-auto pr-2">
+                                            <i style="font-weight: bold;font-size: larger; color: green;"
+                                                class="pi pi-check-circle"></i>
+                                        </div>
+                                        <div class="col">
+                                            <h3 style="margin-top: 10px; font-size: 1.25rem;">Code Pull Details</h3>
+                                        </div>
+                                        <!-- Change 4: Action buttons - stack on mobile, inline on desktop -->
+                                        <div class="col-12 col-md-auto mt-2 mt-md-0">
+                                            <a *ngIf="item.IsDownloadChecksumReport"
+                                                (click)="downloadChecksumReportVersionWise(item)"
+                                                style="color: #5eb0f8; font-size: small; cursor: pointer; display: inline-flex; align-items: center; margin-right: 15px;">
+                                                <img style="width: 24px;height: 25px;margin-right: 5px;"
+                                                    src="assets/img/Login/download.gif" />Checksum Log
+                                            </a>
+                                            <a (click)="goToTab('Process Log')"
+                                                style="color: #5eb0f8; font-size: small; cursor: pointer; display: inline-flex; align-items: center;">
+                                                <img style="width: 24px;height: 25px;margin-right: 5px;"
+                                                    src="assets/img/Login/ViewDetails.gif" />View Details
+                                            </a>
+                                        </div>
+                                    </div>
+                                    <hr style="margin-top: 0px; margin-bottom: 9px;" />
+                                    <div class="row">
+                                        <div class="col-4">
+                                            <p><strong style="font-weight: bold;">Code Pulled By:</strong> {{
+                                                item.CodePull_by }} </p>
+                                            <p><strong style="font-weight: bold;">Recent Pulled Date:</strong> {{
+                                                _commonService.formatLocalTime(item.CodeLastPullAt) }}</p>
+                                        </div>
+                                        <div class="col-4">
+                                            <p><strong style="font-weight: bold;">Deposit Method:</strong> {{
+                                                item.repository }}</p>
+                                            <p><strong style="font-weight: bold;">File Size(MB):</strong> {{
+                                                item.FileSize |
+                                                number:'1.3-3'}}</p>
+                                        </div>
+                                        <div class="col-4">
+                                            <p><strong style="font-weight: bold;">Version:</strong> {{ item.Version }}
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <hr style="margin-bottom: 0px;margin-top: 0px;" />
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-8 text-center" *ngIf="!events || events.length === 0 || events === null">
+                    <h2 style="margin-top: 20px; color: #003564;">No Log Found</h2>
+                </div>
+
+                <div class="col-4" style="margin-left: -13px;">
+                    <p-card>
+                        <form [formGroup]="ProjectCodePullForm">
+                            <div class="modal-body">
+                                <!-- OLD BUTTON - Pull Source Code Button for GIT -->
+                                <!-- <div *ngIf="IntegrationType === 'GIT'" class="pb-4">
+                                    <a class="btn successbtn btn-block" (click)="pullGitCode()"
+                                        [style.pointer-events]="Level1Pending || Level2Pending || pullButtonDisable ? 'none' : 'auto'"
+                                        style="color: white; height: 3.5rem; padding: 9px 16px; border-radius: 4px; font-size: 25px;"
+                                        pTooltip="Code Pull" tooltipPosition="top"> Pull Source Code</a>
+                                </div> -->
+
+                                <div *ngIf="IsDepositorAcknowledged" class="ack-status-badge mb-3">
+                                    <i class="fa fa-check-circle"></i>
+                                    <div class="ack-status-text">
+                                        <div class="ack-status-title">Acknowledgement Completed</div>
+                                        <div class="ack-status-subtitle">
+                                            Signed on {{ DepositorAcknowledgementDate }}
+                                        </div>
+                                    </div>
+                                    <button type="button" class="btn-download-ack"
+                                        (click)="viewDepositorAcknowledgementPDF()"
+                                        pTooltip="Download Acknowledgement PDF" tooltipPosition="top">
+                                        <i class="fa fa-eye"></i>
+                                    </button>
+                                </div>
+
+                                <!-- Pull Source Code Button for GIT -->
+                                <!-- <div *ngIf="IntegrationType === 'GIT'" class="pb-4">
+                                    <a class="btn btn-block" (click)="pullGitCode()"
+                                        [style.pointer-events]="Level1Pending || Level2Pending || pullButtonDisable ? 'none' : 'auto'"
+                                        [style.opacity]="Level1Pending || Level2Pending || pullButtonDisable ? '0.6' : '1'"
+                                        [style.cursor]="Level1Pending || Level2Pending || pullButtonDisable ? 'not-allowed' : 'pointer'"
+                                        style="background: #00d480; color: #FFFFFF; height: 3.5rem; padding: 9px 16px; border-radius: 6px; font-size: 25px; border: none; font-weight: 500; transition: all 0.3s ease;"
+                                        onmouseover="if(!this.style.pointerEvents || this.style.pointerEvents === 'auto') this.style.background='#00c070'"
+                                        onmouseout="if(!this.style.pointerEvents || this.style.pointerEvents === 'auto') this.style.background='#00d480'"
+                                        pTooltip="Code Pull" tooltipPosition="top">
+                                        <i class="fa fa-download" style="margin-right: 10px;"></i>Pull Source Code
+                                    </a>
+                                </div> -->
+
+                                <div *ngIf="IntegrationType === 'GIT'" class="pb-4">
+                                    <a class="btn btn-block" (click)="openDepositorAcknowledgement()"
+                                        [style.pointer-events]="Level1Pending || Level2Pending || pullButtonDisable ? 'none' : 'auto'"
+                                        [style.opacity]="Level1Pending || Level2Pending || pullButtonDisable ? '0.6' : '1'"
+                                        [style.cursor]="Level1Pending || Level2Pending || pullButtonDisable ? 'not-allowed' : 'pointer'"
+                                        style="background: #00d480; color: #FFFFFF; height: 3.5rem; padding: 9px 16px; border-radius: 6px; font-size: 25px; border: none; font-weight: 500; transition: all 0.3s ease;"
+                                        onmouseover="if(!this.style.pointerEvents || this.style.pointerEvents === 'auto') this.style.background='#00c070'"
+                                        onmouseout="if(!this.style.pointerEvents || this.style.pointerEvents === 'auto') this.style.background='#00d480'"
+                                        pTooltip="Code Pull" tooltipPosition="top"> {{ GitCodePullBtnTxt }}
+                                    </a>
+                                </div>
+
+                                <!-- Pull Source Code Button for SFTP -->
+                                <div *ngIf="IntegrationType === 'SFTP'" class="pb-4">
+                                    <a class="btn btn-block" (click)="DownloadSFTPCode()"
+                                        [style.pointer-events]="Level1Pending || Level2Pending || pullButtonDisable ? 'none' : 'auto'"
+                                        [style.opacity]="Level1Pending || Level2Pending || pullButtonDisable ? '0.6' : '1'"
+                                        [style.cursor]="Level1Pending || Level2Pending || pullButtonDisable ? 'not-allowed' : 'pointer'"
+                                        style="background: #00d480; color: #FFFFFF; height: 3.5rem; padding: 9px 16px; border-radius: 6px; font-size: 25px; border: none; font-weight: 500; transition: all 0.3s ease;"
+                                        onmouseover="if(!this.style.pointerEvents || this.style.pointerEvents === 'auto') this.style.background='#00c070'"
+                                        onmouseout="if(!this.style.pointerEvents || this.style.pointerEvents === 'auto') this.style.background='#00d480'"
+                                        pTooltip="Code Pull" tooltipPosition="top"> Pull Source Code</a>
+                                </div>
+
+                                <!-- Upload Source Code Button for Manual Upload -->
+                                <div *ngIf="IntegrationType === 'Manual Upload'" class="pb-4">
+                                    <a class="btn btn-block" (click)="ManualUpload()"
+                                        [style.pointer-events]="Level1Pending || Level2Pending || pullButtonDisable ? 'none' : 'auto'"
+                                        [style.opacity]="Level1Pending || Level2Pending || pullButtonDisable ? '0.6' : '1'"
+                                        [style.cursor]="Level1Pending || Level2Pending || pullButtonDisable ? 'not-allowed' : 'pointer'"
+                                        style="background: #00d480; color: #FFFFFF; height: 3.5rem; padding: 9px 16px; border-radius: 6px; font-size: 25px; border: none; font-weight: 500; transition: all 0.3s ease;"
+                                        onmouseover="if(!this.style.pointerEvents || this.style.pointerEvents === 'auto') this.style.background='#00c070'"
+                                        onmouseout="if(!this.style.pointerEvents || this.style.pointerEvents === 'auto') this.style.background='#00d480'"
+                                        pTooltip="Code Upload" tooltipPosition="top"> Upload Source Code</a>
+                                </div>
+
+
+                                <!-- Code Pull Status -->
+                                <div>
+                                    <div *ngIf="initilizerLoaderOn" style="display: flex; align-items: center;">
+                                        <p
+                                            style="margin: 0; padding-right: 10px; padding-left: 30px; font-size: large; color: #005e82">
+                                            Code Pull Initialized
+                                        </p>
+                                    </div>
+
+                                    <div class="col text-center" *ngIf="Level1Pending || Level2Pending">
+                                        <div class="alert d-flex align-items-center justify-content-center mt-2 mb-2"
+                                            style="background: #fff0f0; border: 1px solid #ffd6d6; border-radius: 8px; padding: 14px 14px;">
+                                            <i class="fa fa-hourglass-half"
+                                                style="color: #f81414; font-size: 24px; margin-right: 12px;"></i>
+                                            <span style="font-size: 18px; color: #d32f2f; font-weight: 500;">
+                                                Verification Pending!
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    <div *ngIf="finalMessage" class="alert d-flex align-items-center mt-3 mb-3"
+                                        style="background: #e6ffed; border: 1px solid #b7eb8f; border-radius: 8px; padding: 16px 24px;">
+                                        <i class="fa fa-check-circle"
+                                            style="color: #52c41a; font-size: 28px; margin-right: 16px;"></i>
+                                        <span
+                                            style="font-size: 18px; color: #389e0d; font-weight: 500; margin-right: 16px;">
+                                            Code Pull Completed
+                                        </span>
+                                    </div>
+
+                                    <div *ngIf="commentMessage"
+                                        class="alert alert-warning d-flex align-items-center mt-3 mb-3"
+                                        style="background: #fffbe6; border: 1px solid #ffe58f; border-radius: 8px; padding: 16px 24px;">
+                                        <i class="fa fa-exclamation-circle"
+                                            style="color: #faad14; font-size: 28px; margin-right: 16px;"></i>
+                                        <span style="font-size: 18px; color: #856404;">
+                                            Please enter comment before submitting the code for verification.
+                                        </span>
+                                    </div>
+
+                                    <div *ngIf="commentMessageForAckCopy"
+                                        class="alert d-flex align-items-center mt-3 mb-3"
+                                        style="background: #e6f7ff; border: 1px solid #91d5ff; border-radius: 8px; padding: 16px 24px;">
+                                        <i class="fa fa-info-circle"
+                                            style="color: #1890ff; font-size: 28px; margin-right: 16px;"></i>
+                                        <span style="font-size: 18px; color: #0050b3;">
+                                            Please complete the acknowledgement to submit the code.
+                                        </span>
+                                    </div>
+
+                                    <div *ngIf="commentMessageforUnverified"
+                                        class="alert alert-warning d-flex align-items-center mt-3 mb-3"
+                                        style="background: #fffbe6; border: 1px solid #ffe58f; border-radius: 8px; padding: 16px 24px;">
+                                        <i class="fa fa-exclamation-circle"
+                                            style="color: #faad14; font-size: 28px; margin-right: 16px;"></i>
+                                        <span style="font-size: 18px; color: #856404;">
+                                            Please enter comment before submitting the code.
+                                        </span>
+                                    </div>
+                                </div>
+
+                                <!-- Comment Field -->
+                                <div>
+                                    <label for="Comment"
+                                        style="font-size: large; display: block; color: #0A424A; font-weight: 500;">Comment
+                                        *</label>
+                                    <textarea id="Comment" formControlName="Comment" name="Comment" ngModel required
+                                        rows="5" cols="30"
+                                        style="border-radius: 6px; border: 2px solid #C9F5D9; padding: 10px; color: #0f292e; width: 100%;"
+                                        (input)="verifyInput($event)"
+                                        (focus)="$event.target.style.borderColor='#00d480'"
+                                        (blur)="$event.target.style.borderColor='#C9F5D9'"
+                                        [readOnly]="Level1Pending || Level2Pending || commentMessageForAckCopy"
+                                        [ngClass]="{'is-invalid': f.Comment.touched && f.Comment.invalid}"></textarea>
+                                </div>
+                                <div *ngIf="f.Comment.touched && f.Comment.invalid" style="color:red; font-size: 13px;">
+                                    <div *ngIf="f.Comment.errors?.required">
+                                        Comment is required
+                                    </div>
+                                    <div *ngIf="f.Comment.errors?.pattern">
+                                        Only alphanumeric characters are allowed
+                                    </div>
+                                    <div *ngIf="f.Comment.errors?.htmlNotAllowed">
+                                        HTML or script content is not allowed
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Submit Button -->
+                            <div class="modal-footer" style="border-top: 2px solid #C9F5D9;">
+                                <button type="button" class="btn" (click)="OnReset()"
+                                    style="background: #FFFFFF; color: red; border: 2px solid #ff0000; padding: 10px 24px; border-radius: 6px; font-weight: 500; transition: all 0.3s ease;"
+                                    onmouseover="this.style.background='#ff0000'; this.style.color='#FFFFFF'"
+                                    onmouseout="this.style.background='#FFFFFF'; this.style.color='#ff0000'">
+                                    <i class="fa fa-undo" style="margin-right: 6px;"></i>Reset
+                                </button>
+
+                                <button type="submit" class="btn" (click)="onSubmit()"
+                                    [disabled]="ProjectCodePullForm.invalid"
+                                    [style.opacity]="ProjectCodePullForm.invalid ? '0.5' : '1'"
+                                    [style.cursor]="ProjectCodePullForm.invalid ? 'not-allowed' : 'pointer'"
+                                    style="background: #00d480; color: #FFFFFF; border: none; padding: 10px 24px; border-radius: 6px; font-weight: 500; transition: all 0.3s ease;"
+                                    onmouseover="if(!this.disabled) this.style.background='#00c070'"
+                                    onmouseout="if(!this.disabled) this.style.background='#00d480'">
+                                    <i class="fa fa-paper-plane" style="margin-right: 6px;"></i>Submit Code
+                                </button>
+                            </div>
+                        </form>
+                    </p-card>
+                </div>
+            </div>
+        </p-tabPanel>
+
+        <!----------------------------------------------------------------------------------------------------------------------------------------------------------------------->
+
+        <p-tabPanel header="Verification" *ngIf="_VerificationTab"
+            [disabled]="UploadPending || Level1Rejected || Depositor || Level2Rejected">
+            <div class="row">
+                <div class="container-fluid col-9">
+                    <div class="">
+
+                        <div class="row" *ngIf="Level1Pending">
+                            <div class="dataTables_wrapper col"
+                                style="background: white;padding: 10px; box-shadow: 0px 20px 53px -30px rgba(95, 102, 173, 0.566816);">
+                                <div class="dataTables_wrapper col-10"
+                                    style="box-shadow: none; background-color: #f6f8fdcf; border-radius: 40px; margin: 5px auto; padding: 43px;">
+                                    <div class="row">
+                                        <h1 class="col-6"
+                                            style="font-family: 'Arial', sans-serif; font-size: 24px; font-weight: bold;">
+                                            Verification Level 1</h1>
+                                        <a class="col-6" (click)="goToTab('View Source Code')"
+                                            *ngIf="_ViewSourceCodeTab"
+                                            style="text-align: right;color: #5eb0f8; width:40px"><img
+                                                style="width: 40px;" src="assets/img/Login/file.gif" /> source code view
+                                        </a>
+                                    </div>
+
+                                    <p class="mt-4"
+                                        style="font-size: 18px; font-family: 'Verdana', sans-serif;padding-bottom: 10px;">
+                                        Preliminary Check of File Structure and Integrity</p>
+
+                                    <!-- onVerifyOne('Verification completed') -->
+                                    <form [formGroup]="ProjectCodePullForm"
+                                        (ngSubmit)="openBeneficiaryAcknowledgement()">
+                                        <div>
+                                            <!-- Checksum Verification Button for GIT (shown after successful pull) -->
+                                            <div *ngIf="IntegrationType === 'GIT'" class="pb-3">
+                                                <a class="btn" (click)="openChecksumVerificationModal()"
+                                                    style="background: linear-gradient(135deg, #0A424A 0%, #0f292e 100%); color: #FFFFFF; height: 2.5rem; padding: 6px 14px; border-radius: 6px; font-size: 16px; border: none; font-weight: 500; transition: all 0.3s ease; cursor: pointer; box-shadow: 0 4px 15px rgba(10, 66, 74, 0.3); display: inline-block;"
+                                                    onmouseover="this.style.boxShadow='0 6px 20px rgba(10, 66, 74, 0.4)'; this.style.transform='translateY(-2px)'"
+                                                    onmouseout="this.style.boxShadow='0 4px 15px rgba(10, 66, 74, 0.3)'; this.style.transform='translateY(0)'"
+                                                    pTooltip="Verify source code checksum" tooltipPosition="top">
+                                                    <i class="fa fa-shield-alt" style="margin-right: 8px;"></i>
+                                                    {{ ChecksumBtn }}
+                                                </a>
+                                            </div>
+
+                                            <!-- Depositor Acknowledgment Copy Section -->
+                                            <div *ngIf="IntegrationType === 'GIT'" class="pb-4">
+                                                <div
+                                                    style="background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%); border-left: 4px solid #0A424A; padding: 20px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);">
+                                                    <div
+                                                        style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                                                        <h3
+                                                            style="font-family: 'Arial', sans-serif; font-size: 18px; font-weight: 600; color: #0A424A; margin: 0;">
+                                                            <i class="fa fa-file-alt" style="margin-right: 8px;"></i>
+                                                            Depositor Acknowledgment Copy
+                                                        </h3>
+                                                        <button type="button"
+                                                            (click)="viewDepositorAcknowledgementPDF()"
+                                                            style="background: #0A424A; color: white; border: none; padding: 6px 16px; border-radius: 20px; font-size: 14px; cursor: pointer; transition: all 0.3s ease;"
+                                                            onmouseover="this.style.background='#0f292e'"
+                                                            onmouseout="this.style.background='#0A424A'"
+                                                            pTooltip="View full acknowledgment details"
+                                                            tooltipPosition="top">
+                                                            <i class="fa fa-eye" style="margin-right: 6px;"></i>
+                                                            View Details
+                                                        </button>
+                                                    </div>
+                                                    <p
+                                                        style="font-size: 14px; font-family: 'Verdana', sans-serif; color: #334155; margin: 0; line-height: 1.6;">
+                                                        Review the depositor's acknowledgment and submission details
+                                                        before proceeding with verification.
+                                                    </p>
+                                                </div>
+                                            </div>
+
+                                            <div *ngIf="IntegrationType !== 'GIT'">
+                                                <div *ngFor="let category of categories" style="margin-bottom: 15px;">
+                                                    <div
+                                                        style="width: 100%; display: flex; align-items: center; padding-top: 5px;">
+                                                        <input type="checkbox" [formControlName]="category.name"
+                                                            [value]="category.name" style="margin-right: 10px;" />
+                                                        <span
+                                                            style="font-size: 16px; font-family: 'Verdana', sans-serif;">{{
+                                                            category.key }}</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div *ngIf="IntegrationType === 'GIT'">
+                                                <label for="Comment"
+                                                    style="font-size: 16px; font-family: 'Verdana', sans-serif;">Comment
+                                                    *</label>
+                                                <textarea formControlName="Comment" rows="5"
+                                                    (input)="verifyInput($event)" [readOnly]="!checksumCompared"
+                                                    style="width: 100%; margin-top: 10px; padding: 10px; font-family: 'Arial', sans-serif; font-size: 14px; border-radius: 10px;"
+                                                    [ngClass]="{'is-invalid': f.Comment.touched && f.Comment.invalid}">
+                                                </textarea>
+                                            </div>
+
+                                            <div *ngIf="IntegrationType !== 'GIT'">
+                                                <label for="Comment"
+                                                    style="font-size: 16px; font-family: 'Verdana', sans-serif;">Comment
+                                                    *</label>
+                                                <textarea formControlName="Comment" rows="5"
+                                                    (input)="verifyInput($event)"
+                                                    style="width: 100%; margin-top: 10px; padding: 10px; font-family: 'Arial', sans-serif; font-size: 14px; border-radius: 10px;"
+                                                    [ngClass]="{'is-invalid': f.Comment.touched && f.Comment.invalid}">
+                                                </textarea>
+                                            </div>
+
+                                            <div style="margin-top: 20px; text-align: right;">
+                                                <button type="submit" [disabled]="ProjectCodePullForm.invalid"
+                                                    style="border-radius: 20px;" class="btn mintbtn">Accept
+                                                    Code</button>
+
+                                                <button type="button" [disabled]="ProjectCodePullForm.invalid"
+                                                    class="btn successbtn" style="border-radius: 20px;"
+                                                    (click)="onVerifyOne('Verification Failed')">Reject Code</button>
+
+                                                <button type="button" class="btn dangerbtn" style="border-radius: 20px;"
+                                                    (click)="onVerifyReset()">Reset</button>
+                                            </div>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row" *ngIf="Level2Pending">
+                            <div class="dataTables_wrapper col"
+                                style="background: white;padding: 10px; box-shadow: 0px 20px 53px -30px rgba(95, 102, 173, 0.566816);">
+
+                                <div class="dataTables_wrapper col-10"
+                                    style="box-shadow: none; background-color: #f6f8fdcf; border-radius: 40px; margin: 5px auto; padding: 43px;">
+                                    <div class="row">
+                                        <h1 class="col-6"
+                                            style="font-family: 'Arial', sans-serif; font-size: 24px; font-weight: bold;">
+                                            Verification Level 2</h1>
+                                        <a class="col-6" (click)="goToTab('View Source Code')"
+                                            *ngIf="_ViewSourceCodeTab"
+                                            style="text-align: right;color: #5eb0f8; width:40px"><img
+                                                style="width: 40px;" src="assets/img/Login/file.gif" /> source code view
+                                        </a>
+                                    </div>
+                                    <p class="mt-4" style="font-size: 18px; font-family: 'Verdana', sans-serif;">
+                                        Perform Code Compilation and Validation for Execution Readiness</p>
+
+
+                                    <button type="button" [hidden]="downloadReport"
+                                        style="border-radius: 20px; margin-bottom: 20px;" (click)="CompileCode()"
+                                        class="btn mintbtn">Compile Code</button>
+
+                                    <button type="button" [hidden]="downloadReport" class="btn successbtn"
+                                        style="border-radius: 20px; margin-bottom: 20px;"
+                                        (click)="BuildApplication()">Build
+                                        Application</button>
+
+                                    <button type="button" [hidden]="!downloadReport" class="btn successbtn"
+                                        style="border-radius: 20px; margin-bottom: 20px;"
+                                        (click)="DownloadReport()">Download
+                                        Report</button>
+
+                                    <form [formGroup]="ProjectCodePullForm">
+                                        <div>
+                                            <label for="Comment"
+                                                style="font-size: 16px; font-family: 'Verdana', sans-serif;">Comment
+                                                *</label>
+                                            <textarea formControlName="Comment" rows="5" (input)="verifyInput($event)"
+                                                style="width: 100%; margin-top: 10px; padding: 10px; font-family: 'Arial', sans-serif; font-size: 14px; border-radius: 10px;"
+                                                [ngClass]="{'is-invalid': f.Comment.touched && f.Comment.invalid}">
+                                            </textarea>
+                                            <div style="margin-top: 20px; text-align: right;">
+
+                                                <button type="button" [disabled]="ProjectCodePullForm.invalid"
+                                                    class="btn successbtn" style="border-radius: 20px;"
+                                                    (click)="onVerifyTwo('Verification completed')">Accept Code</button>
+
+                                                <button type="button" [disabled]="ProjectCodePullForm.invalid"
+                                                    class="btn successbtn" style="border-radius: 20px;"
+                                                    (click)="onVerifyTwo('Verification Failed')">Reject Code</button>
+
+                                                <button type="button" class="btn dangerbtn" style="border-radius: 20px;"
+                                                    (click)="onVerifyReset()">Reset</button>
+
+                                            </div>
+                                        </div>
+                                    </form>
+
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row" *ngIf="VerificationCompleted">
+                            <div class="dataTables_wrapper col"
+                                style="background: white;padding: 10px; box-shadow: 0px 20px 53px -30px rgba(95, 102, 173, 0.566816);">
+
+                                <div class="dataTables_wrapper col-10"
+                                    style="box-shadow: none; background-color: #f6f8fdcf; border-radius: 40px; margin: 5px auto; padding: 43px;">
+                                    <div class="row">
+                                        <h1 class="col-6"
+                                            style="font-family: 'Arial', sans-serif; font-size: 24px; font-weight: bold;">
+                                            Verification Completed</h1>
+                                        <a class="col-6" (click)="goToTab('View Source Code')"
+                                            *ngIf="_ViewSourceCodeTab"
+                                            style="text-align: right;color: #5eb0f8; width:40px"><img
+                                                style="width: 40px;" src="assets/img/Login/file.gif" /> source code view
+                                        </a>
+                                    </div>
+
+
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </p-tabPanel>
+
+        <!------------------------------------------------------------------------------------------------------------------------------------------------------------>
+
+        <p-tabPanel header="View Source Code" *ngIf="_ViewSourceCodeTab" [disabled]="UploadPending">
+            <div class="header">
+            </div>
+            <form [formGroup]="ProjectCodePullForm">
+                <div class="container-fluid mt--6">
+                    <div class="row">
+                        <div class="col">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h3 class="mb-0 float-left" style="margin-top: 20px;">Source Code</h3>
+                                    <div class="d-flex float-right">
+                                        <label class="form-control-label mb-3" for="Version"
+                                            style="text-wrap: nowrap; margin-right: 5px;padding-top: 5px;">
+                                            Version :
+                                        </label>
+                                        <select name="Version" id="Version" class="form-control"
+                                            formControlName="Version" (change)="getBranchList($event.target.value)"
+                                            style="height: 30px; width: 80%; padding: 2px 8px; font-size: 14px;"
+                                            [ngClass]="{'is-invalid': f.Version.touched && f.Version.invalid}">
+                                            <option value="0">Select Version</option>
+                                            <option *ngFor="let _Version of _VersionL" [value]="_Version.Id">
+                                                {{ _Version.Version }}
+                                            </option>
+                                        </select>
+                                        <!-- <button type="button" class="btn success" pTooltip="Download" tooltipPosition="top"
+                                    (click)="onBack()">
+                                        <i class="fa fa-arrow-left fa-lg"></i>
+                                    </button> -->
+                                        <!-- <a><span class="btn-inner--icon" (click)="downloadSCFile()"><img
+                                        tooltip="Source Code Download" src="assets/img/clouddownload.png"
+                                        alt="Edit User" class="btn-image"
+                                        style=" width: 28px; height: 28px;margin-left: 10px;" /></span>
+                                     </a> -->
+                                    </div>
+                                </div>
+
+                                <div class="row mt-3 px-4" style="height: 40rem">
+                                    <div class="form-group col-lg-4 col-md-4 scrollbar-thin"
+                                        style="height: 38rem; overflow: auto">
+                                        <div class="flex flex-column align-items-left justify-content-center">
+                                            <p-tree [value]="files" class="w-full md:w-30rem bg-none border-none"
+                                                (onNodeSelect)="onNodeSelect($event)" (click)="getFile($event)"
+                                                selectionMode="single" [(selection)]="selectedFile">
+                                            </p-tree>
+                                        </div>
+                                    </div>
+                                    <div class="form-group col-lg-8 col-md-8 scrollbar-thin"
+                                        style="height: 38rem; overflow: auto" (copy)="blockCopy($event)"
+                                        (contextmenu)="blockContextMenu($event)">
+                                        <div class="rounded shadow-sm p-4 overflow-auto"
+                                            style="max-height: 450px;border: 1px solid rgba(255, 255, 255, 0.1);font-family: 'Courier New', monospace;line-height: 1.5;color: black;">
+                                            <pre *ngFor="let line of contentLines" class="mb-0 px-2 py-1"
+                                                style="white-space: pre-wrap;word-wrap: break-word;border-left: 3px solid #5bc0de;color: black;">{{ line }}</pre>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </form>
+            <p-toast position="top-right" [showTransformOptions]="'translateY(100%)'" [showTransitionOptions]="'1000ms'"
+                [hideTransitionOptions]="'1000ms'" [showTransformOptions]="'translateX(100%)'"></p-toast>
+
+        </p-tabPanel>
+
+        <!------------------------------------------------------------------------------------------------------------------------------------------------------------>
+
+        <p-tabPanel header="Process Log">
+            <div class="header">
+            </div>
+            <div class="container-fluid mt--6">
+                <div class="row">
+                    <div class="col">
+                        <div class="dataTables_wrapper">
+                            <p-table [paginator]="true" [rows]="10" [value]="formattedData" [autoLayout]="true"
+                                [showCurrentPageReport]="true" [rowsPerPageOptions]="[10, 25, 50, 100]" [first]="first"
+                                (onPage)="paginate($event)" [loading]="loading"
+                                currentPageReportTemplate="Showing {first} to {last} of {totalRecords} entries"
+                                styleClass="p-datatable-striped">
+                                <ng-template pTemplate="caption">
+                                    <input type="text" pInputText size="50" placeholder="Search records"
+                                        (input)="searchTable($event)" class="global-search search" />
+                                    <div class="btn-group float-right">
+                                        <button type="button" class="btn success" tooltip="Download"
+                                            (click)="onDownloadExcelFile('Project Log')">
+                                            <i class="fa fa-download fa-lg"></i>
+                                        </button>
+                                    </div>
+                                </ng-template>
+                                <ng-template pTemplate="header">
+                                    <tr>
+                                        <th *ngIf="!actionbutton" style="width: 8%; padding-left: 25px;">Acknowledgement
+                                            Copies</th>
+                                        <th *ngFor="let col of headerList; let i = index"
+                                            [ngStyle]="i == 0 && { width: '5%' }">
+                                            {{ col.header }}
+                                        </th>
+                                        <th *ngIf="!actionbutton" style="width: 8%; padding-left: 25px;">Action</th>
+                                    </tr>
+                                </ng-template>
+                                <ng-template pTemplate="body" let-car let-rowIndex="rowIndex">
+                                    <tr>
+                                        <td>
+                                            <a pTooltip="View Ack Copies" tooltipPosition="bottom"
+                                                (click)="openAckPopup(car)" class="hover-image"
+                                                style="cursor: pointer;">
+                                                <span style="width: 28px; height: 28px;color:#000;">
+                                                    <img src="assets/img/ackcopy.png" alt="Acknowledgement Copies"
+                                                        style="width: 28px; height: 28px; margin: 0 4rem;" />
+                                                </span>
+                                            </a>
+                                        </td>
+                                        <td *ngFor="let col of headerList">
+                                            {{ car[col.field] }}
+                                        </td>
+                                        <td *ngIf="!actionbutton">
+                                            <a data-toggle="modal" pTooltip="Log Report" tooltipPosition="bottom"
+                                                (click)="DownloadLogReport(car.LogFilepath)"
+                                                data-toggle-class="modal-open-aside" class="hover-image"
+                                                style="margin-left: 1rem;" *ngIf="car.LogFilepath !== null">
+                                                <span style="width: 28px; height: 28px;color:#000;">
+                                                    <img src="assets/img/report.png" alt="Edit User"
+                                                        style="width: 28px; height: 28px;" />
+                                                </span>
+                                            </a>
+                                        </td>
+                                    </tr>
+                                </ng-template>
+                            </p-table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <p-toast position="top-right" [showTransformOptions]="'translateY(100%)'" [showTransitionOptions]="'1000ms'"
+                [hideTransitionOptions]="'1000ms'" [showTransformOptions]="'translateX(100%)'"></p-toast>
+
+        </p-tabPanel>
+
+    </p-tabView>
+
+    <!-- Checksum Verification Modal -->
+    <p-dialog [(visible)]="showChecksumModal" [modal]="true" [closable]="true" [draggable]="false"
+        (onHide)="ChecksumModelCloseFunctionality()" [style]="{width: '750px'}" styleClass="checksum-modal"
+        [contentStyle]="{'background': '#FFFFFF'}">
+
+        <ng-template pTemplate="header">
+            <div style="display: flex; align-items: center; width: 100%;">
+                <i class="fa fa-shield-alt" style="color: #00d480; font-size: 28px; margin-right: 12px;"></i>
+                <h3 style="margin: 0; color: #0A424A; font-weight: 600;">Source Code Checksum Verification</h3>
+            </div>
+        </ng-template>
+
+        <div class="p-4">
+            <div class="mb-4"
+                style="background: #edfaed; padding: 16px; border-radius: 8px; border-left: 4px solid #00d480;">
+                <p style="font-size: 16px; color: #0f292e; line-height: 1.6; margin: 0;">
+                    <i class="fa fa-info-circle" style="color: #00d480; margin-right: 8px;"></i>
+                    This process verifies the integrity of the source code by comparing checksums between
+                    the Git repository and the Escrow system to ensure code authenticity.
+                </p>
+            </div>
+
+            <!-- Step 1: Generate Checksum -->
+            <div class="verification-step mb-4 p-3"
+                style="background: #FFFFFF; border: 2px solid #C9F5D9; border-radius: 8px; transition: all 0.3s ease;"
+                onmouseover="this.style.borderColor='#00d480'" onmouseout="this.style.borderColor='#C9F5D9'">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div style="flex: 1;">
+                        <h5 style="margin: 0; color: #0A424A; font-weight: 600;">
+                            <span
+                                style="display: inline-block; width: 32px; height: 32px; background: #C9F5D9; border-radius: 50%; text-align: center; line-height: 32px; margin-right: 10px; color: #0A424A; font-weight: bold;">1</span>
+                            Generate Checksums
+                        </h5>
+                        <p style="margin: 8px 0 0 42px; font-size: 14px; color: #5A5A5A;">
+                            Generate SHA-256 checksums for Escrow system
+                        </p>
+                    </div>
+                    <button type="button" class="btn" [disabled]="checksumGenerating || checksumGenerated"
+                        (click)="generateChecksums()"
+                        [style.opacity]="(checksumGenerating || checksumGenerated) ? '0.6' : '1'"
+                        [style.cursor]="(checksumGenerating || checksumGenerated) ? 'not-allowed' : 'pointer'"
+                        style="background: #00d480; color: #FFFFFF; border: none; padding: 10px 24px; border-radius: 6px; font-weight: 500; min-width: 140px; transition: all 0.3s ease;"
+                        onmouseover="if(!this.disabled) this.style.background='#00c070'; if(!this.disabled) this.style.transform='translateY(-2px)'"
+                        onmouseout="if(!this.disabled) this.style.background='#00d480'; if(!this.disabled) this.style.transform='translateY(0)'">
+                        <i class="fa"
+                            [ngClass]="{'fa-cog fa-spin': checksumGenerating, 'fa-check': checksumGenerated, 'fa-play': !checksumGenerating && !checksumGenerated}"
+                            style="margin-right: 6px;"></i>
+                        {{ checksumGenerating ? 'Generating...' : (checksumGenerated ? 'Generated' : 'Generate') }}
+                    </button>
+                </div>
+                <div *ngIf="checksumGenerated" class="mt-3"
+                    style="padding: 16px; background: #edfaed; border-radius: 6px; border: 1px solid #C9F5D9;">
+                    <div>
+                        <!-- <strong style="color: #0A424A; font-size: 14px;">Escrow System Checksum:</strong> -->
+                        <div style="margin-top: 6px;">
+                            <code
+                                style="background: #FFFFFF; padding: 8px 12px; border-radius: 4px; display: block; color: #0f292e; font-size: 12px; word-break: break-all; border: 1px solid #C9F5D9;">
+                            {{ escrowChecksum }}
+                        </code>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step 2: Compare Checksums -->
+            <div class="verification-step mb-4 p-3"
+                style="background: #FFFFFF; border: 2px solid #C9F5D9; border-radius: 8px; transition: all 0.3s ease;"
+                onmouseover="this.style.borderColor='#00d480'" onmouseout="this.style.borderColor='#C9F5D9'">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div style="flex: 1;">
+                        <h5 style="margin: 0; color: #0A424A; font-weight: 600;">
+                            <span
+                                style="display: inline-block; width: 32px; height: 32px; background: #C9F5D9; border-radius: 50%; text-align: center; line-height: 32px; margin-right: 10px; color: #0A424A; font-weight: bold;">2</span>
+                            Compare & Verify
+                        </h5>
+                        <p style="margin: 8px 0 0 42px; font-size: 14px; color: #5A5A5A;">
+                            Compare checksums to verify code integrity and authenticity
+                        </p>
+                    </div>
+                    <button type="button" class="btn"
+                        [disabled]="!checksumGenerated || checksumComparing || checksumCompared"
+                        (click)="compareChecksums()"
+                        [style.opacity]="(!checksumGenerated || checksumComparing || checksumCompared) ? '0.6' : '1'"
+                        [style.cursor]="(!checksumGenerated || checksumComparing || checksumCompared) ? 'not-allowed' : 'pointer'"
+                        style="background: #0A424A; color: #FFFFFF; border: none; padding: 10px 24px; border-radius: 6px; font-weight: 500; min-width: 140px; transition: all 0.3s ease;"
+                        onmouseover="if(!this.disabled) this.style.background='#0f292e'; if(!this.disabled) this.style.transform='translateY(-2px)'"
+                        onmouseout="if(!this.disabled) this.style.background='#0A424A'; if(!this.disabled) this.style.transform='translateY(0)'">
+                        <i class="fa"
+                            [ngClass]="{'fa-sync fa-spin': checksumComparing, 'fa-check': checksumCompared, 'fa-balance-scale': !checksumComparing && !checksumCompared}"
+                            style="margin-right: 6px;"></i>
+                        {{ checksumComparing ? 'Comparing...' : (checksumCompared ? 'Compared' : 'Compare') }}
+                    </button>
+                </div>
+                <div *ngIf="checksumCompared" class="mt-3">
+                    <div *ngIf="checksumsMatch" class="alert d-flex align-items-center"
+                        style="background: #edfaed; border: 2px solid #00d480; border-radius: 8px; padding: 16px; margin: 0;">
+                        <i class="fa fa-check-circle" style="color: #00d480; font-size: 32px; margin-right: 16px;"></i>
+                        <div>
+                            <span style="font-size: 16px; color: #0A424A; font-weight: 600; display: block;">
+                                Checksums Match Successfully
+                            </span>
+                            <span style="font-size: 14px; color: #5A5A5A; display: block; margin-top: 4px;">
+                                Code integrity verified - Source code is authentic and unmodified
+                            </span>
+                        </div>
+                    </div>
+                    <div *ngIf="!checksumsMatch" class="alert d-flex align-items-center"
+                        style="background: #fadeb5; border: 2px solid #CC0000; border-radius: 8px; padding: 16px; margin: 0;">
+                        <i class="fa fa-times-circle" style="color: #CC0000; font-size: 32px; margin-right: 16px;"></i>
+                        <div>
+                            <span style="font-size: 16px; color: #CC0000; font-weight: 600; display: block;">
+                                Checksums Do Not Match
+                            </span>
+                            <span style="font-size: 14px; color: #5A5A5A; display: block; margin-top: 4px;">
+                                Integrity check failed - Please verify the source code or contact administrator
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Download Report Button -->
+            <div class="text-center mt-4" *ngIf="checksumCompared">
+                <button type="button" class="btn" (click)="downloadChecksumReport()"
+                    style="background: linear-gradient(135deg, #00d480 0%, #0A424A 100%); color: #FFFFFF; border: none; padding: 12px 32px; border-radius: 6px; font-size: 16px; font-weight: 500; box-shadow: 0 4px 12px rgba(0, 212, 128, 0.3); transition: all 0.3s ease;"
+                    onmouseover="this.style.boxShadow='0 6px 16px rgba(0, 212, 128, 0.4)'; this.style.transform='translateY(-2px)'"
+                    onmouseout="this.style.boxShadow='0 4px 12px rgba(0, 212, 128, 0.3)'; this.style.transform='translateY(0)'">
+                    <i class="fa fa-download" style="margin-right: 10px;"></i>
+                    Download Verification Report
+                </button>
+            </div>
+        </div>
+
+        <ng-template pTemplate="footer">
+            <div
+                style="display: flex; justify-content: flex-end; gap: 12px; padding: 16px; border-top: 2px solid #C9F5D9;">
+                <button type="button" class="btn" (click)="closeChecksumModal()"
+                    style="background: #FFFFFF; color: #5A5A5A; border: 2px solid #5A5A5A; padding: 10px 24px; border-radius: 6px; font-weight: 500; transition: all 0.3s ease;"
+                    onmouseover="this.style.background='#5A5A5A'; this.style.color='#FFFFFF'"
+                    onmouseout="this.style.background='#FFFFFF'; this.style.color='#5A5A5A'">
+                    <i class="fa fa-times" style="margin-right: 6px;"></i>Close
+                </button>
+            </div>
+        </ng-template>
+    </p-dialog>
+
+    <!-- Depositor Acknowledgement Modal -->
+    <p-dialog [(visible)]="ShowDepositorAckModal" [modal]="true" [closable]="true" [draggable]="false"
+        [resizable]="false" styleClass="ack-modal" [style]="{width: '800px', maxWidth: '90vw'}">
+
+        <!-- Modal Header -->
+        <ng-template pTemplate="header">
+            <div class="ack-modal-header">
+                <i class="fa fa-file-signature"></i>
+                <h2>Depositor Acknowledgement</h2>
+            </div>
+        </ng-template>
+
+        <!-- Modal Body -->
+        <div class="ack-modal-body">
+
+            <!-- Depositor Information -->
+            <div class="depositor-info">
+                <h3>Depositor Information</h3>
+                <div class="info-grid">
+                    <div class="info-item">
+                        <label>Name:</label>
+                        <span>{{ DepositorName }}</span>
+                    </div>
+                    <div class="info-item">
+                        <label>Email:</label>
+                        <span>{{ DepositorEmail }}</span>
+                    </div>
+                    <div class="info-item">
+                        <label>Project Name:</label>
+                        <span>{{ projectName }}</span>
+                    </div>
+                    <div class="info-item">
+                        <label>Integration Type:</label>
+                        <span>{{ IntegrationType }}</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Acknowledgement Text -->
+            <div class="acknowledgement-content">
+                <div class="scrollable-text">
+                    <pre>{{ DepositorAcknowledgementText }}</pre>
+                </div>
+            </div>
+
+            <!-- Signature Upload Section -->
+            <div class="signature-section">
+                <h3>Digital Signature *</h3>
+                <p class="signature-instruction">
+                    Please upload your digital signature to acknowledge and accept the terms above.
+                </p>
+
+                <div *ngIf="!DepositorSignaturePreview" class="signature-upload-area">
+                    <input type="file" #DepositorSignatureInput (change)="onDepositorSignatureUpload($event)"
+                        accept="image/png,image/jpeg,image/jpg" style="display: none;" id="signatureFileInput">
+                    <label for="signatureFileInput" class="upload-label">
+                        <i class="fa fa-cloud-upload-alt"></i>
+                        <span>Click to upload signature</span>
+                        <small>PNG, JPG, JPEG (Max 5MB)</small>
+                    </label>
+                </div>
+
+                <div *ngIf="DepositorSignaturePreview" class="signature-preview">
+                    <img [src]="DepositorSignaturePreview" alt="Signature Preview">
+                    <button type="button" class="btn-remove-signature" (click)="removeDepositorSignature()"
+                        pTooltip="Remove Signature" tooltipPosition="top">
+                        <i class="fa fa-times"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Important Notice -->
+            <div class="important-notice">
+                <i class="fa fa-info-circle"></i>
+                <p>
+                    By uploading your signature and clicking "I Acknowledge", you confirm that you have read,
+                    understood, and agree to all the terms stated in this acknowledgement.
+                </p>
+            </div>
+        </div>
+
+        <!-- Modal Footer -->
+        <ng-template pTemplate="footer">
+            <div class="ack-modal-footer">
+                <button type="button" class="btnnew btn-cancel" (click)="closeDepositorAckModal()">
+                    <i class="fa fa-times"></i>Cancel
+                </button>
+                <button type="button" class="btnnew btn-acknowledge" (click)="handleDepositorAcknowledge()"
+                    [disabled]="!DepositorSignatureFile">
+                    <i class="fa fa-check-circle"></i>I Acknowledge
+                </button>
+            </div>
+        </ng-template>
+    </p-dialog>
+
+    <!-- Beneficiary Acknowledgement Modal -->
+    <p-dialog [(visible)]="ShowBeneficiaryAckModal" [modal]="true" [closable]="true" [draggable]="false"
+        [resizable]="false" styleClass="ack-modal" [style]="{width: '800px', maxWidth: '90vw'}">
+
+        <!-- Modal Header -->
+        <ng-template pTemplate="header">
+            <div class="ack-modal-header">
+                <i class="fa fa-file-signature"></i>
+                <h2>Beneficiary Verification Acknowledgement</h2>
+            </div>
+        </ng-template>
+
+        <!-- Modal Body -->
+        <div class="ack-modal-body">
+
+            <!-- Beneficiary Information -->
+            <div class="depositor-info">
+                <h3>Beneficiary Information</h3>
+                <div class="info-grid">
+                    <div class="info-item">
+                        <label>Name:</label>
+                        <span>{{ BeneficiaryName }}</span>
+                    </div>
+                    <div class="info-item">
+                        <label>Email:</label>
+                        <span>{{ BeneficiaryEmail }}</span>
+                    </div>
+                    <div class="info-item">
+                        <label>Project Name:</label>
+                        <span>{{ projectName }}</span>
+                    </div>
+                    <div class="info-item">
+                        <label>Integration Type:</label>
+                        <span>{{ IntegrationType }}</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Acknowledgement Text -->
+            <div class="acknowledgement-content">
+                <div class="scrollable-text">
+                    <pre>{{ BeneficiaryAcknowledgementText }}</pre>
+                </div>
+            </div>
+
+            <!-- Signature Upload Section -->
+            <div class="signature-section">
+                <h3>Digital Signature *</h3>
+                <p class="signature-instruction">
+                    Please upload your digital signature to acknowledge and accept the verification responsibility.
+                </p>
+
+                <div *ngIf="!BeneficiarySignaturePreview" class="signature-upload-area">
+                    <input type="file" #BeneficiarySignatureInput (change)="onBeneficiarySignatureUpload($event)"
+                        accept="image/png,image/jpeg,image/jpg" style="display: none;" id="signatureFileInput">
+                    <label for="signatureFileInput" class="upload-label">
+                        <i class="fa fa-cloud-upload-alt"></i>
+                        <span>Click to upload signature</span>
+                        <small>PNG, JPG, JPEG (Max 5MB)</small>
+                    </label>
+                </div>
+
+                <div *ngIf="BeneficiarySignaturePreview" class="signature-preview">
+                    <img [src]="BeneficiarySignaturePreview" alt="Signature Preview">
+                    <button type="button" class="btn-remove-signature" (click)="removeBeneficiarySignature()"
+                        pTooltip="Remove Signature" tooltipPosition="top">
+                        <i class="fa fa-times"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Important Notice -->
+            <div class="important-notice">
+                <i class="fa fa-info-circle"></i>
+                <p>
+                    By uploading your signature and clicking "I Acknowledge", you confirm that you have thoroughly
+                    performed verification and accept full responsibility for this verification decision.
+                </p>
+            </div>
+        </div>
+
+        <!-- Modal Footer -->
+        <ng-template pTemplate="footer">
+            <div class="ack-modal-footer">
+                <button type="button" class="btnnew btn-cancel" (click)="closeBeneficiaryAckModal()">
+                    <i class="fa fa-times"></i>Cancel
+                </button>
+                <button type="button" class="btnnew btn-acknowledge" (click)="handleBeneficiaryAcknowledge()"
+                    [disabled]="!BeneficiarySignatureFile">
+                    <i class="fa fa-check-circle"></i>I Acknowledge
+                </button>
+            </div>
+        </ng-template>
+    </p-dialog>
+
+    <!-- Acknowledgement Copies Popup Modal -->
+    <p-dialog [(visible)]="displayAckPopup" [modal]="true" [style]="{width: '450px'}" [baseZIndex]="10000"
+        [draggable]="false" [resizable]="false" [showHeader]="false" styleClass="ack-copies-dialog">
+        <div class="ack-popup-content">
+            <div class="popup-header">
+                <h3>Acknowledgement Copies</h3>
+                <button type="button" class="close-btn" (click)="closeAckPopup()">
+                    <i class="fa fa-times"></i>
+                </button>
+            </div>
+
+            <div class="popup-body">
+                <button type="button" class="ack-download-btn depositor-btn"
+                    (click)="viewDepositorAcknowledgementPDFVersionWise(selectedRecord)"
+                    [disabled]="!selectedRecord?.Depositor_Ack_FilePath">
+                    <i class="fa fa-eye"></i>
+                    <span>View Depositor Ack Copy</span>
+                </button>
+
+                <button type="button" class="ack-download-btn beneficiary-btn"
+                    (click)="viewBeneficiaryAcknowledgementPDFVersionWise(selectedRecord)"
+                    [disabled]="!selectedRecord?.Beneficiary_Ack_FilePath">
+                    <i class="fa fa-eye"></i>
+                    <span>View Beneficiary Ack Copy</span>
+                </button>
+            </div>
+
+            <div class="popup-footer">
+                <button type="button" class="cancel-btn" (click)="closeAckPopup()">
+                    Close
+                </button>
+            </div>
+        </div>
+    </p-dialog>
+
+</div>
+
+<p-toast position="top-right" [showTransformOptions]="'translateY(100%)'" [showTransitionOptions]="'1000ms'"
+    [hideTransitionOptions]="'1000ms'" [showTransformOptions]="'translateX(100%)'"></p-toast>
