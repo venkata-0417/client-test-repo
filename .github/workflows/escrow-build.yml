@@ -53,20 +53,28 @@ jobs:
       # STEP 2 — Source Checksum
       # Runs for BOTH Level 1 and Level 2
       # ─────────────────────────────────
-      - name: Generate Source Checksum
-        run: |
-          echo "Generating SOURCE checksum..."
+      -  name: Generate Source Checksum
+         run: |
           find . -type f \
             ! -path './.git/*' \
+            ! -path './.github/*' \
+            ! -path './.vscode/*' \
             ! -path './node_modules/*' \
             ! -path './.next/*' \
             ! -path './dist/*' \
             ! -path './build/*' \
             ! -path './target/*' \
+            ! -path './other/*' \
+            ! -name '.gitignore' \
+            ! -name 'source_checksum.txt' \
+            ! -name 'build_checksum.txt' \
             | sort | xargs sha256sum > source_checksum.txt
           echo "--- Source Checksum ---"
           cat source_checksum.txt
-          echo "Total: $(wc -l < source_checksum.txt) files"
+          echo "Total files: $(wc -l < source_checksum.txt)"
+
+
+          
 
       # ─────────────────────────────────
       # STEP 3 — Gate: Skip if Level 1
