@@ -70,16 +70,44 @@ jobs:
         if: ${{ inputs.project_type == 'java' }}
         run: mvn clean package -DskipTests
 
-      - name: Generate Checksum
+      - name: Generate Source Code Checksum
         run: |
-          find . -type f ! -path './.git/*' | sort | xargs sha256sum > checksum.txt
-          cat checksum.txt
+          echo "Generating source code checksum..."
+          find . -type f \
+            ! -path './.git/*' \
+            ! -path './node_modules/*' \
+            ! -path './dist/*' \
+            ! -path './build/*' \
+            ! -path './target/*' \
+            ! -path './.next/*' \
+            | sort | xargs sha256sum > source_checksum.txt
+          cat source_checksum.txt
 
-      - name: Upload Artifact
+      - name: Generate Build Artifact Checksum
+        run: |
+          echo "Generating build artifact checksum..."
+
+          if [ -d "dist" ]; then
+            find dist -type f | sort | xargs sha256sum > build_checksum.txt
+          elif [ -d "build" ]; then
+            find build -type f | sort | xargs sha256sum > build_checksum.txt
+          elif [ -d "target" ]; then
+            find target -type f | sort | xargs sha256sum > build_checksum.txt
+          elif [ -d ".next" ]; then
+            find .next -type f | sort | xargs sha256sum > build_checksum.txt
+          else
+            echo "No build directory found" > build_checksum.txt
+          fi
+
+          cat build_checksum.txt
+
+       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
           name: escrow-build-${{ github.run_id }}
-          path: checksum.txt
+          path: |
+            source_checksum.txt
+            build_checksum.txt
           retention-days: 30
 
 
