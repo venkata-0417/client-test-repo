@@ -219,32 +219,5 @@ jobs:
           retention-days: 30
 
 
----
 
-## What Changed and Why
 
-| Issue | Before | After |
-|---|---|---|
-| Source checksum | Only ran when `build_required == 'no'` | Now **always runs** — both levels need it |
-| Build checksum | Ran when `build_required == 'yes'` | Same — but now clearly separated per project type |
-| Upload failure | Files missing, silent empty artifact | Level 1 creates a placeholder `build_checksum.txt` so upload never fails |
-| Build steps | All node types in one step | Separated per project type — Angular/React/Next.js each have own step |
-| Summary | None | Added full summary printed in logs |
-
----
-
-## How the Two Levels Now Work
-```
-build_required = "no"  (Level 1)
-    ✅ Checkout
-    ✅ Source checksum generated       ← always runs
-    ⏭ Build steps skipped
-    ✅ Placeholder build_checksum.txt  ← so upload doesn't fail
-    ✅ Artifact uploaded
-
-build_required = "yes"  (Level 2)
-    ✅ Checkout
-    ✅ Source checksum generated       ← always runs
-    ✅ Build runs (correct project type)
-    ✅ Build checksum generated
-    ✅ Both files uploaded as artifact
